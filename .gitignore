@@ -1,0 +1,8 @@
+build/
+*.exe
+*.obj
+*.o
+frames/*.pgm
+frames/*.png
+frames/*.gif
+frames/*.mp4
