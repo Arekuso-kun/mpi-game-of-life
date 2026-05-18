@@ -120,6 +120,36 @@ Exemplu pentru benchmark serial fara output grafic:
 ./build/life_serial --width 1000 --height 1000 --steps 100 --pattern random --seed 42 --density 0.25 --snapshot-interval 0
 ```
 
+## Validare serial vs MPI
+
+Corectitudinea versiunii MPI se verifica prin comparatie bit-cu-bit cu versiunea
+seriala, folosind aceeasi grila, acelasi seed si acelasi numar de generatii.
+
+Daca MPI este disponibil, `ctest` ruleaza automat si testul
+`validation_serial_vs_mpi`:
+
+```bash
+ctest --test-dir build --output-on-failure
+```
+
+Validare manuala pe Linux/macOS/cluster:
+
+```bash
+./build/life_serial --width 64 --height 64 --steps 100 --pattern random --seed 42 --density 0.25 --snapshot-interval 100 --output frames_serial
+mpirun -np 4 ./build/life_mpi --width 64 --height 64 --steps 100 --pattern random --seed 42 --density 0.25 --snapshot-interval 100 --output frames_mpi
+cmp frames_serial/frame_000100.pgm frames_mpi/frame_000100.pgm
+```
+
+Validare manuala pe Windows:
+
+```powershell
+.\build\life_serial.exe --width 64 --height 64 --steps 100 --pattern random --seed 42 --density 0.25 --snapshot-interval 100 --output frames_serial
+mpiexec -n 4 .\build\life_mpi.exe --width 64 --height 64 --steps 100 --pattern random --seed 42 --density 0.25 --snapshot-interval 100 --output frames_mpi
+fc /b frames_serial\frame_000100.pgm frames_mpi\frame_000100.pgm
+```
+
+Pentru Visual Studio, executabilele sunt de obicei in `build\Release`.
+
 ## Vizualizare
 
 Output-ul grafic este salvat ca fisiere `PGM P5` in directorul ales cu

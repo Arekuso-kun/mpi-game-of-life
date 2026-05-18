@@ -49,6 +49,50 @@ if(MPI_CXX_FOUND)
             life_core
             MPI::MPI_CXX
     )
+
+    add_test(
+        NAME validation_serial_reference
+        COMMAND $<TARGET_FILE:life_serial>
+            --width 32
+            --height 32
+            --steps 20
+            --pattern random
+            --seed 42
+            --density 0.25
+            --snapshot-interval 20
+            --output ${CMAKE_BINARY_DIR}/validation_serial
+    )
+
+    add_test(
+        NAME validation_mpi_reference
+        COMMAND ${MPIEXEC_EXECUTABLE}
+            ${MPIEXEC_NUMPROC_FLAG} 4
+            ${MPIEXEC_PREFLAGS}
+            $<TARGET_FILE:life_mpi>
+            ${MPIEXEC_POSTFLAGS}
+            --width 32
+            --height 32
+            --steps 20
+            --pattern random
+            --seed 42
+            --density 0.25
+            --snapshot-interval 20
+            --output ${CMAKE_BINARY_DIR}/validation_mpi
+    )
+
+    add_test(
+        NAME validation_serial_vs_mpi
+        COMMAND ${CMAKE_COMMAND} -E compare_files
+            ${CMAKE_BINARY_DIR}/validation_serial/frame_000020.pgm
+            ${CMAKE_BINARY_DIR}/validation_mpi/frame_000020.pgm
+    )
+
+    set_tests_properties(validation_mpi_reference PROPERTIES
+        DEPENDS validation_serial_reference
+    )
+    set_tests_properties(validation_serial_vs_mpi PROPERTIES
+        DEPENDS "validation_serial_reference;validation_mpi_reference"
+    )
 else()
     message(STATUS "MPI C++ compiler not found; skipping life_mpi target")
 endif()
