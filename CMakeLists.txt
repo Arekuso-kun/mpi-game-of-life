@@ -36,3 +36,19 @@ target_link_libraries(life_tests
 
 enable_testing()
 add_test(NAME life_tests COMMAND life_tests)
+
+find_package(MPI QUIET)
+
+if(MPI_CXX_FOUND)
+    add_executable(life_mpi
+        src/main_mpi.cpp
+    )
+
+    target_link_libraries(life_mpi
+        PRIVATE
+            life_core
+            MPI::MPI_CXX
+    )
+else()
+    message(STATUS "MPI C++ compiler not found; skipping life_mpi target")
+endif()

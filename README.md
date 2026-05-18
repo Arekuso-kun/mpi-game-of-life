@@ -1,118 +1,137 @@
 # MPI Game of Life
 
-Simulator pentru Conway's Game of Life, pregatit pentru extensie MPI. Prima etapa este
-implementarea seriala, folosita ca referinta de corectitudine pentru versiunea paralela.
+Simulator pentru Conway's Game of Life pe grile 2D, cu versiune seriala si
+versiune MPI. Versiunea seriala este folosita ca referinta de corectitudine
+pentru implementarea paralela.
+
+## Cerinte
+
+- CMake
+- compilator C++17: GCC/MinGW, Clang sau MSVC
+- optional: o implementare MPI pentru `life_mpi`
+
+Pentru MPI se pot folosi OpenMPI/MPICH pe Linux/macOS/cluster sau MS-MPI pe
+Windows.
 
 ## Structura
 
 ```text
-include/life.hpp      reguli, grila, pattern-uri initiale
+include/life.hpp      grila, reguli, pattern-uri initiale
 include/pgm.hpp       export PGM
-src/life.cpp          implementarea algoritmului serial
+src/life.cpp          implementarea regulilor Game of Life
 src/pgm.cpp           writer PGM binar P5
-src/main_serial.cpp   CLI pentru rularea versiunii seriale
+src/main_serial.cpp   executabil serial
+src/main_mpi.cpp      executabil MPI, descompunere 1D pe linii
+tests/test_life.cpp   teste pentru logica seriala
 ```
 
-## Build si rulare
+## Build
 
-### Cerinte
-
-Ai nevoie de:
-
-- CMake;
-- un compilator C++ cu suport C++17: GCC/MinGW, Clang sau MSVC.
-
-Verifica in terminal:
-
-```powershell
-cmake --version
-g++ --version   # pentru GCC/MinGW
-cl              # pentru MSVC, din Developer PowerShell for Visual Studio
-```
-
-### Linux/macOS
+### Linux/macOS/cluster
 
 ```bash
 cmake -S . -B build
 cmake --build build
-./build/life_serial --width 200 --height 200 --steps 100 --pattern glider --snapshot-interval 10 --output frames
-```
-
-Testele se ruleaza cu:
-
-```bash
 ctest --test-dir build --output-on-failure
-```
-
-Alternativ, fara CMake:
-
-```bash
-g++ -std=c++17 -O3 -Iinclude src/main_serial.cpp src/life.cpp src/pgm.cpp -o life_serial
-g++ -std=c++17 -O2 -Iinclude tests/test_life.cpp src/life.cpp src/pgm.cpp -o life_tests
-./life_serial --width 200 --height 200 --steps 100 --pattern glider --snapshot-interval 10 --output frames
-./life_tests
 ```
 
 ### Windows cu Visual Studio / MSVC
 
-Din "Developer PowerShell for Visual Studio":
+Din `Developer PowerShell for Visual Studio`:
 
 ```powershell
 cmake -S . -B build
 cmake --build build --config Release
-.\build\Release\life_serial.exe --width 200 --height 200 --steps 100 --pattern glider --snapshot-interval 10 --output frames
 ctest --test-dir build -C Release --output-on-failure
-```
-
-Daca CMake genereaza executabilele in `Debug`, foloseste:
-
-```powershell
-.\build\Debug\life_serial.exe --width 200 --height 200 --steps 100 --pattern glider --snapshot-interval 10 --output frames
 ```
 
 ### Windows cu MinGW/MSYS2
 
-```bash
+```powershell
 cmake -S . -B build -G "MinGW Makefiles"
 cmake --build build
-./build/life_serial.exe --width 200 --height 200 --steps 100 --pattern glider --snapshot-interval 10 --output frames
 ctest --test-dir build --output-on-failure
 ```
 
-Alternativ, fara CMake:
+## Rulare seriala
+
+### Linux/macOS/cluster
 
 ```bash
-g++ -std=c++17 -O3 -Iinclude src/main_serial.cpp src/life.cpp src/pgm.cpp -o life_serial.exe
-g++ -std=c++17 -O2 -Iinclude tests/test_life.cpp src/life.cpp src/pgm.cpp -o life_tests.exe
-./life_serial.exe --width 200 --height 200 --steps 100 --pattern glider --snapshot-interval 10 --output frames
-./life_tests.exe
+./build/life_serial --width 200 --height 200 --steps 100 --pattern glider --snapshot-interval 10 --output frames
 ```
 
-## Optiuni utile
+### Windows cu Visual Studio / MSVC
 
-Pattern-uri disponibile:
+```powershell
+.\build\Release\life_serial.exe --width 200 --height 200 --steps 100 --pattern glider --snapshot-interval 10 --output frames
+```
+
+### Windows cu MinGW/MSYS2
+
+```powershell
+.\build\life_serial.exe --width 200 --height 200 --steps 100 --pattern glider --snapshot-interval 10 --output frames
+```
+
+## Rulare MPI
+
+CMake construieste tinta `life_mpi` doar daca gaseste MPI instalat.
+
+Versiunea MPI foloseste descompunere 1D pe linii. Fiecare proces primeste un
+bloc de randuri si schimba cate un rand halo cu vecinii de sus si jos folosind
+`MPI_Isend` / `MPI_Irecv`.
+
+### Linux/macOS/cluster
+
+```bash
+mpirun -np 4 ./build/life_mpi --width 200 --height 200 --steps 100 --pattern glider --snapshot-interval 10 --output frames_mpi
+```
+
+### Windows cu Visual Studio / MSVC
+
+```powershell
+mpiexec -n 4 .\build\Release\life_mpi.exe --width 200 --height 200 --steps 100 --pattern glider --snapshot-interval 10 --output frames_mpi
+```
+
+### Windows cu MinGW/MSYS2
+
+```powershell
+mpiexec -n 4 .\build\life_mpi.exe --width 200 --height 200 --steps 100 --pattern glider --snapshot-interval 10 --output frames_mpi
+```
+
+## Optiuni
+
+Optiunile principale sunt aceleasi pentru executabilul serial si pentru cel MPI.
 
 ```text
-random, glider, blinker, block
+--width N               latimea grilei
+--height N              inaltimea grilei
+--steps N               numarul de generatii
+--snapshot-interval N   salveaza un frame la fiecare N pasi; 0 dezactiveaza output-ul
+--pattern NAME          random, glider, blinker, block
+--seed N                seed pentru pattern-ul random
+--density P             probabilitatea unei celule vii pentru random
+--output DIR            directorul pentru frame-uri PGM
 ```
 
-Pentru un test random reproductibil:
+Exemplu pentru benchmark serial fara output grafic:
 
 ```bash
-./build/life_serial --width 512 --height 512 --steps 200 --pattern random --seed 42 --density 0.25
+./build/life_serial --width 1000 --height 1000 --steps 100 --pattern random --seed 42 --density 0.25 --snapshot-interval 0
 ```
 
-Output-ul grafic este salvat ca fisiere `PGM P5` in directorul `frames/`.
+## Vizualizare
 
-## Conversie imagini
+Output-ul grafic este salvat ca fisiere `PGM P5` in directorul ales cu
+`--output`.
 
-Cu ImageMagick:
+Conversie in GIF cu ImageMagick:
 
 ```bash
 magick frames/frame_*.pgm life.gif
 ```
 
-Cu ffmpeg:
+Conversie in MP4 cu ffmpeg:
 
 ```bash
 ffmpeg -framerate 12 -i frames/frame_%06d.pgm life.mp4
