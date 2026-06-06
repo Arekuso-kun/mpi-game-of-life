@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <exception>
 #include <filesystem>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -26,6 +27,8 @@ namespace
         double density = 0.25;
         std::string pattern = "glider";
         std::filesystem::path output_dir = "frames";
+        std::filesystem::path csv_path;
+        bool csv_enabled = false;
     };
 
     void print_usage(const char *program)
@@ -41,6 +44,7 @@ namespace
             << "  --seed N                Seed for random pattern (default: 42)\n"
             << "  --density P             Alive probability for random pattern (default: 0.25)\n"
             << "  --output DIR            Directory for PGM frames (default: frames)\n"
+            << "  --csv FILE              Append benchmark metrics to CSV file\n"
             << "  --help                  Show this message\n";
     }
 
@@ -139,6 +143,11 @@ namespace
             {
                 options.output_dir = require_value(i, argc, argv);
             }
+            else if (arg == "--csv")
+            {
+                options.csv_path = require_value(i, argc, argv);
+                options.csv_enabled = true;
+            }
             else
             {
                 throw std::invalid_argument("unknown option: " + arg);
@@ -159,6 +168,54 @@ namespace
         }
 
         return options;
+    }
+
+    void append_csv_result(const Options &options,
+                           double total_seconds,
+                           double computation_seconds,
+                           std::size_t alive_cells)
+    {
+        if (!options.csv_enabled)
+        {
+            return;
+        }
+
+        if (options.csv_path.has_parent_path())
+        {
+            std::filesystem::create_directories(options.csv_path.parent_path());
+        }
+
+        const bool write_header =
+            !std::filesystem::exists(options.csv_path) ||
+            std::filesystem::file_size(options.csv_path) == 0;
+
+        std::ofstream out(options.csv_path, std::ios::app);
+        if (!out)
+        {
+            throw std::runtime_error("could not open CSV file: " + options.csv_path.string());
+        }
+
+        if (write_header)
+        {
+            out << "implementation,processes,width,height,steps,pattern,seed,density,"
+                << "snapshot_interval,alive_cells,total_seconds,communication_seconds,"
+                << "computation_seconds,communication_percent\n";
+        }
+
+        out << std::setprecision(10)
+            << "serial,1,"
+            << options.width << ','
+            << options.height << ','
+            << options.steps << ','
+            << options.pattern << ','
+            << options.seed << ','
+            << options.density << ','
+            << options.snapshot_interval << ','
+            << alive_cells << ','
+            << total_seconds << ','
+            << 0.0 << ','
+            << computation_seconds << ','
+            << 0.0 << '\n';
     }
 
     std::filesystem::path frame_path(const std::filesystem::path &output_dir, std::size_t step)
@@ -208,6 +265,11 @@ int main(int argc, char **argv)
             << "Pattern: " << options.pattern << "\n"
             << "Alive cells: " << life::count_alive(current) << "\n"
             << "Elapsed seconds: " << elapsed.count() << "\n";
+
+        append_csv_result(options,
+                          elapsed.count(),
+                          elapsed.count(),
+                          life::count_alive(current));
     }
     catch (const std::exception &ex)
     {

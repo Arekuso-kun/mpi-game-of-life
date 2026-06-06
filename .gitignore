@@ -13,10 +13,16 @@ build-*/
 *.vcxproj
 *.vcxproj.filters
 *.vcxproj.user
+__pycache__/
+*.pyc
 
 frames/
 frames_*/
 validation_*/
+results/
+results_*.csv
+summary_*.csv
+plots/
 
 *.pgm
 *.png

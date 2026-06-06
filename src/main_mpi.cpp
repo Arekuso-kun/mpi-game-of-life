@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <exception>
 #include <filesystem>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -32,6 +33,8 @@ namespace
         double density = 0.25;
         std::string pattern = "glider";
         std::filesystem::path output_dir = "frames_mpi";
+        std::filesystem::path csv_path;
+        bool csv_enabled = false;
     };
 
     void print_usage(const char *program)
@@ -47,6 +50,7 @@ namespace
             << "  --seed N                Seed for random pattern (default: 42)\n"
             << "  --density P             Alive probability for random pattern (default: 0.25)\n"
             << "  --output DIR            Directory for PGM frames (default: frames_mpi)\n"
+            << "  --csv FILE              Append benchmark metrics to CSV file\n"
             << "  --help                  Show this message\n";
     }
 
@@ -152,6 +156,11 @@ namespace
             {
                 options.output_dir = require_value(i, argc, argv);
             }
+            else if (arg == "--csv")
+            {
+                options.csv_path = require_value(i, argc, argv);
+                options.csv_enabled = true;
+            }
             else
             {
                 throw std::invalid_argument("unknown option: " + arg);
@@ -172,6 +181,60 @@ namespace
         }
 
         return options;
+    }
+
+    void append_csv_result(const Options &options,
+                           int processes,
+                           unsigned long long alive_cells,
+                           double total_seconds,
+                           double communication_seconds,
+                           double computation_seconds)
+    {
+        if (!options.csv_enabled)
+        {
+            return;
+        }
+
+        if (options.csv_path.has_parent_path())
+        {
+            std::filesystem::create_directories(options.csv_path.parent_path());
+        }
+
+        const bool write_header =
+            !std::filesystem::exists(options.csv_path) ||
+            std::filesystem::file_size(options.csv_path) == 0;
+
+        std::ofstream out(options.csv_path, std::ios::app);
+        if (!out)
+        {
+            throw std::runtime_error("could not open CSV file: " + options.csv_path.string());
+        }
+
+        const double communication_percent =
+            total_seconds > 0.0 ? (communication_seconds / total_seconds) * 100.0 : 0.0;
+
+        if (write_header)
+        {
+            out << "implementation,processes,width,height,steps,pattern,seed,density,"
+                << "snapshot_interval,alive_cells,total_seconds,communication_seconds,"
+                << "computation_seconds,communication_percent\n";
+        }
+
+        out << std::setprecision(10)
+            << "mpi-1d,"
+            << processes << ','
+            << options.width << ','
+            << options.height << ','
+            << options.steps << ','
+            << options.pattern << ','
+            << options.seed << ','
+            << options.density << ','
+            << options.snapshot_interval << ','
+            << alive_cells << ','
+            << total_seconds << ','
+            << communication_seconds << ','
+            << computation_seconds << ','
+            << communication_percent << '\n';
     }
 
     std::size_t rows_for_rank(std::size_t height, int world_size, int rank)
@@ -524,6 +587,13 @@ int main(int argc, char **argv)
                 << "Elapsed seconds: " << max_elapsed << "\n"
                 << "Communication seconds: " << max_communication << "\n"
                 << "Computation seconds: " << max_computation << "\n";
+
+            append_csv_result(options,
+                              world_size,
+                              global_alive,
+                              max_elapsed,
+                              max_communication,
+                              max_computation);
         }
     }
     catch (const std::exception &ex)
