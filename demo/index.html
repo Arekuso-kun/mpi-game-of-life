@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="ro">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MPI Game of Life Demo</title>
+    <style>
+      :root {
+        --bg: #f8fafc;
+        --panel: #ffffff;
+        --ink: #111827;
+        --muted: #64748b;
+        --line: #dbe3ef;
+        --blue: #2563eb;
+        --green: #16a34a;
+        --orange: #f97316;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: Arial, sans-serif;
+      }
+
+      main {
+        width: min(1320px, calc(100vw - 32px));
+        margin: 0 auto;
+        padding: 28px 0 40px;
+      }
+
+      header {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 20px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: clamp(28px, 4vw, 42px);
+        line-height: 1.05;
+      }
+
+      h2 {
+        font-size: 22px;
+        margin-bottom: 8px;
+      }
+
+      h3 {
+        font-size: 15px;
+        margin-bottom: 6px;
+      }
+
+      .subtitle,
+      .muted {
+        color: var(--muted);
+      }
+
+      .subtitle {
+        max-width: 720px;
+        margin-top: 8px;
+        font-size: 15px;
+        line-height: 1.5;
+      }
+
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 34px;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        color: var(--muted);
+        font-size: 13px;
+        white-space: nowrap;
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--orange);
+      }
+
+      .dot.ok {
+        background: var(--green);
+      }
+
+      .dot.idle {
+        background: var(--blue);
+      }
+
+      section {
+        margin-top: 26px;
+      }
+
+      .visual-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 760px) minmax(340px, 1fr);
+        gap: 18px;
+        align-items: start;
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .canvas-panel {
+        padding: 16px;
+      }
+
+      canvas {
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        display: block;
+        background: #ffffff;
+        border: 1px solid var(--line);
+        image-rendering: pixelated;
+      }
+
+      .toolbar {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 12px;
+        align-items: center;
+        margin-top: 14px;
+      }
+
+      .frame-control {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 10px;
+        align-items: center;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      button {
+        height: 36px;
+        padding: 0 10px;
+        border: 1px solid #1d4ed8;
+        border-radius: 8px;
+        background: var(--blue);
+        color: #ffffff;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      button.secondary {
+        border-color: var(--line);
+        background: #ffffff;
+        color: var(--ink);
+      }
+
+      input[type="range"] {
+        width: 100%;
+      }
+
+      .speed {
+        display: grid;
+        grid-template-columns: auto minmax(190px, 240px);
+        gap: 10px;
+        align-items: center;
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .speed-control {
+        display: grid;
+        grid-template-columns: auto minmax(84px, 1fr) auto;
+        gap: 8px;
+        align-items: center;
+        justify-self: end;
+      }
+
+      .side {
+        display: grid;
+        gap: 10px;
+      }
+
+      .metric {
+        padding: 12px 14px;
+      }
+
+      .metric strong {
+        display: block;
+        font-size: 26px;
+        line-height: 1.1;
+        margin-top: 6px;
+      }
+
+      .metric strong.date-value {
+        font-size: 20px;
+        line-height: 1.25;
+      }
+
+      .metric small {
+        color: var(--muted);
+      }
+
+      pre {
+        max-height: 120px;
+        overflow: auto;
+        margin: 8px 0 0;
+        padding: 10px;
+        background: #0f172a;
+        color: #e5e7eb;
+        border-radius: 8px;
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      th,
+      td {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--line);
+        text-align: right;
+        font-size: 13px;
+      }
+
+      th:first-child,
+      td:first-child,
+      th:nth-child(2),
+      td:nth-child(2) {
+        text-align: left;
+      }
+
+      thead {
+        background: #eef4ff;
+      }
+
+      tbody tr:last-child td {
+        border-bottom: 0;
+      }
+
+      .plots {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      figure {
+        margin: 0;
+        padding: 14px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      figure img {
+        width: 100%;
+        display: block;
+      }
+
+      figcaption {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .empty {
+        padding: 14px;
+        border: 1px dashed var(--line);
+        border-radius: 8px;
+        color: var(--muted);
+      }
+
+      @media (max-width: 860px) {
+        header,
+        .visual-grid,
+        .plots {
+          grid-template-columns: 1fr;
+          display: grid;
+        }
+
+        header {
+          align-items: start;
+        }
+
+        .toolbar {
+          grid-template-columns: 1fr;
+        }
+
+        .frame-control {
+          grid-template-columns: 1fr;
+        }
+
+        .speed {
+          grid-template-columns: 1fr;
+        }
+
+        .speed-control {
+          justify-self: stretch;
+        }
+
+        .status {
+          white-space: normal;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1>MPI Game of Life</h1>
+          <p class="subtitle">Demo static pentru vizualizarea simularii, validarea rezultatului si analiza performantei MPI.</p>
+        </div>
+        <div class="status" id="validationStatus">
+          <span class="dot idle"></span>
+          <span>Se incarca datele demo</span>
+        </div>
+      </header>
+
+      <section class="visual-grid">
+        <div class="panel canvas-panel">
+          <canvas id="lifeCanvas" width="96" height="96"></canvas>
+          <div class="toolbar">
+            <button id="playButton" type="button">Porneste</button>
+            <div class="frame-control">
+              <label for="frameSlider">Generatie</label>
+              <input id="frameSlider" type="range" min="0" max="0" value="0">
+            </div>
+            <button class="secondary" id="resetButton" type="button">Resetare</button>
+          </div>
+          <div class="speed">
+            <span id="frameLabel">Generatie 0 / 0</span>
+            <div class="speed-control">
+              <label for="speedSlider">Viteza</label>
+              <input id="speedSlider" type="range" min="2" max="30" value="12">
+              <span id="speedValue">12 fps</span>
+            </div>
+          </div>
+        </div>
+
+        <aside class="side">
+          <div class="panel metric">
+            <small>Dimensiune demo</small>
+            <strong id="gridSize">-</strong>
+          </div>
+          <div class="panel metric">
+            <small>Celule vii in generatia curenta</small>
+            <strong id="aliveCount">-</strong>
+          </div>
+          <div class="panel metric">
+            <small>Ultima generare</small>
+            <strong class="date-value" id="generatedAt">-</strong>
+          </div>
+          <div class="panel metric">
+            <h3>Validare</h3>
+            <p class="muted" id="validationText">-</p>
+            <pre id="validationOutput"></pre>
+          </div>
+        </aside>
+      </section>
+
+      <section>
+        <h2>Rezumat strong scaling</h2>
+        <p class="subtitle">Grila ramane fixa, iar numarul de procese MPI creste.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Procese</th>
+              <th>Grila</th>
+              <th>Timp total</th>
+              <th>Speedup</th>
+              <th>Eficienta</th>
+              <th>Comunicatie</th>
+            </tr>
+          </thead>
+          <tbody id="strongRows">
+            <tr><td colspan="6">Nu exista date de benchmark.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Rezumat weak scaling</h2>
+        <p class="subtitle">Volumul de lucru per proces ramane aproximativ constant, iar grila creste proportional.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Procese</th>
+              <th>Grila</th>
+              <th>Timp total</th>
+              <th>Speedup</th>
+              <th>Eficienta</th>
+              <th>Comunicatie</th>
+            </tr>
+          </thead>
+          <tbody id="weakRows">
+            <tr><td colspan="6">Nu exista date de benchmark.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Grafice</h2>
+        <p class="subtitle">Metricile principale sunt speedup-ul, eficienta, timpul total si raportul calcul-comunicatie.</p>
+        <div class="plots" id="plots"></div>
+      </section>
+    </main>
+
+    <script src="data/demo-data.js"></script>
+    <script>
+      const demo = window.demoData || null;
+      const canvas = document.getElementById("lifeCanvas");
+      const context = canvas.getContext("2d");
+      const playButton = document.getElementById("playButton");
+      const resetButton = document.getElementById("resetButton");
+      const frameSlider = document.getElementById("frameSlider");
+      const speedSlider = document.getElementById("speedSlider");
+      const speedValue = document.getElementById("speedValue");
+      const frameLabel = document.getElementById("frameLabel");
+      const aliveCount = document.getElementById("aliveCount");
+      const gridSize = document.getElementById("gridSize");
+      const generatedAt = document.getElementById("generatedAt");
+      const validationStatus = document.getElementById("validationStatus");
+      const validationText = document.getElementById("validationText");
+      const validationOutput = document.getElementById("validationOutput");
+      const strongRows = document.getElementById("strongRows");
+      const weakRows = document.getElementById("weakRows");
+      const plots = document.getElementById("plots");
+
+      let frames = [];
+      let frameIndex = 0;
+      let timer = null;
+
+      function decodePacked(packed) {
+        const binary = atob(packed);
+        const bytes = new Uint8Array(binary.length);
+        for (let index = 0; index < binary.length; index += 1) {
+          bytes[index] = binary.charCodeAt(index);
+        }
+        return bytes;
+      }
+
+      function formatNumber(value, digits = 3) {
+        const number = Number(value);
+        if (!Number.isFinite(number)) {
+          return "-";
+        }
+        return number.toLocaleString("ro-RO", {
+          maximumFractionDigits: digits,
+        });
+      }
+
+      function formatDateTime(value) {
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+          return value || "-";
+        }
+
+        const datePart = new Intl.DateTimeFormat("ro-RO", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        }).format(date);
+        const timePart = new Intl.DateTimeFormat("ro-RO", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }).format(date);
+
+        return `${datePart}, ${timePart}`;
+      }
+
+      function setStatus() {
+        const dot = validationStatus.querySelector(".dot");
+        const text = validationStatus.querySelector("span:last-child");
+        const validation = demo && demo.validation;
+        dot.className = "dot";
+
+        if (!validation || !validation.ran) {
+          dot.classList.add("idle");
+          text.textContent = "Validarea nu a fost rulata";
+          return;
+        }
+
+        if (validation.passed) {
+          dot.classList.add("ok");
+          text.textContent = "Validarea a trecut";
+        } else {
+          text.textContent = "Validarea a esuat";
+        }
+      }
+
+      function updateSpeedLabel() {
+        speedValue.textContent = `${speedSlider.value} fps`;
+      }
+
+      function drawFrame(index) {
+        if (!frames.length) {
+          return;
+        }
+
+        frameIndex = index;
+        const visual = demo.visual;
+        const frame = frames[frameIndex];
+        const total = visual.width * visual.height;
+        const image = context.createImageData(visual.width, visual.height);
+
+        for (let cell = 0; cell < total; cell += 1) {
+          const alive = (frame.bytes[cell >> 3] & (1 << (cell & 7))) !== 0;
+          const offset = cell * 4;
+          image.data[offset] = alive ? 15 : 248;
+          image.data[offset + 1] = alive ? 23 : 250;
+          image.data[offset + 2] = alive ? 42 : 252;
+          image.data[offset + 3] = 255;
+        }
+
+        context.putImageData(image, 0, 0);
+        frameSlider.value = String(frameIndex);
+        frameLabel.textContent = `Generatie ${frame.step} / ${frames[frames.length - 1].step}`;
+        aliveCount.textContent = formatNumber(frame.alive, 0);
+      }
+
+      function stopPlayback() {
+        if (timer) {
+          clearInterval(timer);
+          timer = null;
+        }
+        playButton.textContent = "Porneste";
+      }
+
+      function startPlayback() {
+        stopPlayback();
+        const delay = 1000 / Number(speedSlider.value);
+        timer = setInterval(() => {
+          const next = (frameIndex + 1) % frames.length;
+          drawFrame(next);
+        }, delay);
+        playButton.textContent = "Pauza";
+      }
+
+      function renderSummaryTable(target, rows, emptyMessage) {
+        const mpiRows = rows
+          .filter((row) => String(row.implementation || "").startsWith("mpi"));
+
+        if (!mpiRows.length) {
+          target.innerHTML = `<tr><td colspan="6">${emptyMessage}</td></tr>`;
+          return;
+        }
+
+        target.innerHTML = mpiRows.map((row) => {
+          const grid = `${row.width} x ${row.height}`;
+          const communication = `${formatNumber(row.communication_percent, 2)}%`;
+          return `
+            <tr>
+              <td>${row.processes}</td>
+              <td>${grid}</td>
+              <td>${formatNumber(row.total_seconds, 4)} s</td>
+              <td>${formatNumber(row.speedup, 3)}</td>
+              <td>${formatNumber(row.efficiency, 3)}</td>
+              <td>${communication}</td>
+            </tr>
+          `;
+        }).join("");
+      }
+
+      function renderSummary() {
+        const summaries = (demo && demo.summaries) || {};
+        const emptyMessage = "Nu exista date de benchmark. Ruleaza demo-ul cu --run-benchmarks sau genereaza benchmark-urile separat.";
+        renderSummaryTable(strongRows, summaries.strong || [], emptyMessage);
+        renderSummaryTable(weakRows, summaries.weak || [], emptyMessage);
+      }
+
+      function renderPlots() {
+        const plotItems = (demo && demo.plots) || [];
+        if (!plotItems.length) {
+          plots.innerHTML = '<div class="empty">Nu exista grafice generate.</div>';
+          return;
+        }
+
+        plots.innerHTML = plotItems.map((plot) => `
+          <figure>
+            <img src="${plot.path}" alt="${plot.title}">
+            <figcaption>${plot.title}</figcaption>
+          </figure>
+        `).join("");
+      }
+
+      function init() {
+        if (!demo) {
+          validationStatus.querySelector("span:last-child").textContent = "Lipseste demo/data/demo-data.js";
+          validationText.textContent = "Ruleaza: python scripts/run_demo.py";
+          validationOutput.textContent = "";
+          return;
+        }
+
+        const visual = demo.visual || { width: 0, height: 0 };
+        canvas.width = visual.width || 96;
+        canvas.height = visual.height || 96;
+        gridSize.textContent = visual.width && visual.height ? `${visual.width} x ${visual.height}` : "-";
+        generatedAt.textContent = formatDateTime(demo.generatedAt);
+
+        frames = (demo.frames || []).map((frame) => ({
+          ...frame,
+          bytes: decodePacked(frame.packed),
+        }));
+        frameSlider.max = String(Math.max(frames.length - 1, 0));
+
+        if (frames.length) {
+          drawFrame(0);
+        } else {
+          frameLabel.textContent = "Nu exista generatii";
+        }
+
+        const validation = demo.validation || {};
+        if (validation.ran) {
+          validationText.textContent = validation.passed
+            ? "Suita CTest a trecut."
+            : "Suita CTest a raportat o eroare.";
+          validationOutput.textContent = validation.summary || validation.command || "";
+        } else {
+          validationText.textContent = validation.summary || "-";
+          validationOutput.textContent = "";
+        }
+        setStatus();
+        renderSummary();
+        renderPlots();
+      }
+
+      playButton.addEventListener("click", () => {
+        if (!frames.length) {
+          return;
+        }
+        if (timer) {
+          stopPlayback();
+        } else {
+          startPlayback();
+        }
+      });
+
+      resetButton.addEventListener("click", () => {
+        stopPlayback();
+        drawFrame(0);
+      });
+
+      frameSlider.addEventListener("input", () => {
+        stopPlayback();
+        drawFrame(Number(frameSlider.value));
+      });
+
+      speedSlider.addEventListener("input", () => {
+        updateSpeedLabel();
+        if (timer) {
+          startPlayback();
+        }
+      });
+
+      updateSpeedLabel();
+      init();
+    </script>
+  </body>
+</html>

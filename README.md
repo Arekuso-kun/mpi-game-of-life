@@ -23,6 +23,8 @@ src/pgm.cpp           writer PGM binar P5
 src/main_serial.cpp   executabil serial
 src/main_mpi.cpp      executabil MPI, descompunere 1D pe linii
 tests/test_life.cpp   teste pentru logica seriala
+scripts/              benchmark-uri, grafice si demo local
+demo/index.html       interfata statica pentru demo
 ```
 
 ## Build
@@ -230,6 +232,38 @@ procent comunicatie = communication_seconds / total_seconds * 100
 Pentru strong scaling, scriptul foloseste ca baseline rularea MPI cu un singur
 proces (`mpi-1d`, `p = 1`). Rularea seriala ramane in CSV-ul brut pentru
 comparatie, dar nu este folosita la eficienta paralela.
+
+## Demo local
+
+Demo-ul foloseste un HTML static si date generate cu Python. Scriptul produce
+frame-uri PGM pentru animatie, copiaza graficele existente si scrie datele in
+`demo/data/demo-data.js`.
+
+```bash
+python scripts/run_demo.py
+```
+
+Apoi se deschide `demo/index.html` in browser.
+
+Pentru a include validarea in demo:
+
+```bash
+python scripts/run_demo.py --run-validation
+```
+
+Daca folderul `build` a fost generat cu Visual Studio, compileaza mai intai
+configuratia folosita de CTest:
+
+```powershell
+cmake --build build --config Release
+python scripts/run_demo.py --run-validation --config Release
+```
+
+Pentru a regenera benchmark-urile si graficele inainte de demo:
+
+```bash
+python scripts/run_demo.py --run-benchmarks --processes 1,4,8,16,32
+```
 
 ## Vizualizare
 

@@ -23,6 +23,9 @@ results/
 results_*.csv
 summary_*.csv
 plots/
+demo/data/
+demo/frames/
+demo/plots/
 
 *.pgm
 *.png
