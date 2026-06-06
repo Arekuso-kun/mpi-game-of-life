@@ -131,6 +131,7 @@ implementation,processes,width,height,steps,pattern,seed,density,snapshot_interv
 
 Corectitudinea versiunii MPI se verifica prin comparatie bit-cu-bit cu versiunea
 seriala, folosind aceeasi grila, acelasi seed si acelasi numar de generatii.
+Validarea automata compara rezultatul dupa 100 de generatii pe o grila mica.
 
 Daca MPI este disponibil, `ctest` ruleaza automat suita `validation_suite`,
 care executa testele seriale, rularea seriala de referinta, rularea MPI si

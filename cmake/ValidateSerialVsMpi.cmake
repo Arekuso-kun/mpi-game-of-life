@@ -20,7 +20,22 @@ endif()
 
 set(SERIAL_DIR "${OUTPUT_DIR}/serial")
 set(MPI_DIR "${OUTPUT_DIR}/mpi")
-set(FRAME_NAME "frame_000020.pgm")
+set(VALIDATION_WIDTH 32)
+set(VALIDATION_HEIGHT 32)
+set(VALIDATION_STEPS 100)
+set(VALIDATION_PATTERN random)
+set(VALIDATION_SEED 42)
+set(VALIDATION_DENSITY 0.25)
+set(VALIDATION_PROCESSES 4)
+string(REPEAT "0" 6 step_padding)
+string(LENGTH "${VALIDATION_STEPS}" step_length)
+math(EXPR padding_length "6 - ${step_length}")
+if(padding_length GREATER 0)
+    string(SUBSTRING "${step_padding}" 0 ${padding_length} step_prefix)
+else()
+    set(step_prefix "")
+endif()
+set(FRAME_NAME "frame_${step_prefix}${VALIDATION_STEPS}.pgm")
 
 file(REMOVE_RECURSE "${SERIAL_DIR}" "${MPI_DIR}")
 
@@ -37,13 +52,13 @@ endif()
 
 execute_process(
     COMMAND "${SERIAL_EXE}"
-        --width 32
-        --height 32
-        --steps 20
-        --pattern random
-        --seed 42
-        --density 0.25
-        --snapshot-interval 20
+        --width ${VALIDATION_WIDTH}
+        --height ${VALIDATION_HEIGHT}
+        --steps ${VALIDATION_STEPS}
+        --pattern ${VALIDATION_PATTERN}
+        --seed ${VALIDATION_SEED}
+        --density ${VALIDATION_DENSITY}
+        --snapshot-interval ${VALIDATION_STEPS}
         --output "${SERIAL_DIR}"
     RESULT_VARIABLE serial_result
 )
@@ -54,15 +69,15 @@ endif()
 
 execute_process(
     COMMAND "${MPIEXEC_EXECUTABLE}"
-        "${MPIEXEC_NUMPROC_FLAG}" 4
+        "${MPIEXEC_NUMPROC_FLAG}" ${VALIDATION_PROCESSES}
         "${MPI_EXE}"
-        --width 32
-        --height 32
-        --steps 20
-        --pattern random
-        --seed 42
-        --density 0.25
-        --snapshot-interval 20
+        --width ${VALIDATION_WIDTH}
+        --height ${VALIDATION_HEIGHT}
+        --steps ${VALIDATION_STEPS}
+        --pattern ${VALIDATION_PATTERN}
+        --seed ${VALIDATION_SEED}
+        --density ${VALIDATION_DENSITY}
+        --snapshot-interval ${VALIDATION_STEPS}
         --output "${MPI_DIR}"
     RESULT_VARIABLE mpi_result
 )
