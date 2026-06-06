@@ -251,14 +251,6 @@ Pentru a include validarea in demo:
 python scripts/run_demo.py --run-validation
 ```
 
-Daca folderul `build` a fost generat cu Visual Studio, compileaza mai intai
-configuratia folosita de CTest:
-
-```powershell
-cmake --build build --config Release
-python scripts/run_demo.py --run-validation --config Release
-```
-
 Pentru a regenera benchmark-urile si graficele inainte de demo:
 
 ```bash

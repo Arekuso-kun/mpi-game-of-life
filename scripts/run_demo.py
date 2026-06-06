@@ -302,8 +302,6 @@ def run_benchmarks(args, project_dir, serial_exe, mpi_exe, results_dir):
         mpi_exe,
         "--mpiexec",
         args.mpiexec,
-        "--process-flag",
-        args.process_flag,
         "--processes",
         args.processes,
         "--steps",
@@ -329,7 +327,6 @@ def main(argv):
     parser.add_argument("--serial-exe", default="")
     parser.add_argument("--mpi-exe", default="")
     parser.add_argument("--mpiexec", default="mpiexec")
-    parser.add_argument("--process-flag", default="-n")
     parser.add_argument("--processes", default="1,4,8,16,32")
     parser.add_argument("--benchmark-steps", type=int, default=100)
     parser.add_argument("--results-dir", default="results")
