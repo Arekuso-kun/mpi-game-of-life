@@ -129,6 +129,34 @@ Fisierul CSV contine:
 implementation,processes,width,height,steps,pattern,seed,density,snapshot_interval,alive_cells,total_seconds,communication_seconds,computation_seconds,communication_percent
 ```
 
+## Ajutor comenzi
+
+Optiunile disponibile pot fi afisate cu `--help`.
+
+Scripturi Python:
+
+```bash
+python scripts/run_demo.py --help
+python scripts/run_benchmarks.py --help
+python scripts/plot_results.py --help
+```
+
+Executabile pe Linux/macOS/cluster:
+
+```bash
+./build/life_serial --help
+mpirun -np 1 ./build/life_mpi --help
+```
+
+Executabile pe Windows cu MinGW/MSYS2:
+
+```powershell
+.\build\life_serial.exe --help
+mpiexec -n 1 .\build\life_mpi.exe --help
+```
+
+Pentru Visual Studio, executabilele sunt de obicei in `build\Release`.
+
 ## Validare serial vs MPI
 
 Corectitudinea versiunii MPI se verifica prin comparatie bit-cu-bit cu versiunea
@@ -158,8 +186,6 @@ Validare manuala pe Windows:
 mpiexec -n 4 .\build\life_mpi.exe --width 64 --height 64 --steps 100 --pattern random --seed 42 --density 0.25 --snapshot-interval 100 --output frames_mpi
 fc /b frames_serial\frame_000100.pgm frames_mpi\frame_000100.pgm
 ```
-
-Pentru Visual Studio, executabilele sunt de obicei in `build\Release`.
 
 ## Benchmarking
 
@@ -239,6 +265,8 @@ Demo-ul foloseste un HTML static si date generate cu Python. Scriptul produce
 frame-uri PGM pentru animatie, copiaza graficele existente si scrie datele in
 `demo/data/demo-data.js`.
 
+Implicit, demo-ul genereaza o simulare `96 x 96` pentru 100 de generatii.
+
 ```bash
 python scripts/run_demo.py
 ```
@@ -255,6 +283,15 @@ Pentru a regenera benchmark-urile si graficele inainte de demo:
 
 ```bash
 python scripts/run_demo.py --run-benchmarks --processes 1,4,8,16,32
+```
+
+Rularea benchmark-urilor complete poate dura mai mult, mai ales pentru 16 si 32
+de procese.
+
+Dimensiunea simularii din demo poate fi schimbata din linia de comanda:
+
+```bash
+python scripts/run_demo.py --demo-width 128 --demo-height 128
 ```
 
 ## Vizualizare
